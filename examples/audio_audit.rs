@@ -1,0 +1,6 @@
+use wasmparser::{Parser,Payload,KnownCustom,Name,TypeRef};
+fn main(){let args:Vec<String>=std::env::args().collect();let bytes=std::fs::read(&args[1]).unwrap();let mut names=std::collections::HashMap::new();let mut imported=0;
+for p in Parser::new(0).parse_all(&bytes){match p.unwrap(){Payload::CustomSection(c)=>if let KnownCustom::Name(ns)=c.as_known(){for n in ns{if let Name::Function(m)=n.unwrap(){for x in m{let x=x.unwrap();names.insert(x.index,x.name.to_string());}}}},Payload::ImportSection(s)=>for i in s.into_imports(){if matches!(i.unwrap().ty,TypeRef::Func(_)){imported+=1;}},_=>{}}}
+let filters=&args[2..];let mut selected=std::collections::HashSet::new();let mut sorted:Vec<_>=names.iter().collect();sorted.sort_by_key(|x|x.0);for (i,n) in sorted{if filters.iter().any(|s|n.to_lowercase().contains(&s.to_lowercase())||s==&i.to_string()){println!("FUNC {i} {n}");selected.insert(*i);}}
+let mut idx=imported;for p in Parser::new(0).parse_all(&bytes){if let Payload::CodeSectionEntry(b)=p.unwrap(){if selected.contains(&idx){println!("\nBODY {idx} {}",names[&idx]);for op in b.get_operators_reader().unwrap(){let op=op.unwrap();if let wasmparser::Operator::Call{function_index}=op{println!("Call {function_index} {}",names.get(&function_index).map(String::as_str).unwrap_or("import"));}else{println!("{op:?}");}}}idx+=1;}}
+}

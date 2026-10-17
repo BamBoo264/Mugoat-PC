@@ -1,0 +1,3 @@
+# GitHub Linguist language detection overrides
+# Hide iOS native Swift UIKit wrapper from language statistics to keep Rust as primary
+native-port/** linguist-detectable=false
